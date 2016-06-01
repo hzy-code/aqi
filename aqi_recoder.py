@@ -18,7 +18,6 @@ def parse_cmd_argu():
         return time.localtime()
     return time.strptime(sys.argv[1],'%y-%m-%d %H:%M:%S')
 
-
 # read all station id from db(aqi.station)
 def read_all_station_id():
     sql="SELECT id FROM station"
@@ -29,10 +28,10 @@ def read_all_station_id():
     return id;
 
 # return url for station_id
-def get_url(station_id):
+def get_url(station_id,t=time.time()):
     path="www.zzemc.cn/em_aw/Services/DataCenter.aspx"
     time_tu=time.localtime()
-    strtime=time.strftime('%Y-%m-%d %H:00:00',time.localtime())
+    strtime=time.strftime('%Y-%m-%d %H:00:00',time.localtime(t))
     params=urllib.parse.urlencode({'type':'getPointHourData',
         'code':station_id,
         'time':strtime})
@@ -83,13 +82,15 @@ def write_to_mysql(station_id,aqi_data):
 
 # add a recoder for a station
 def add_recoder_station(station_id):
-    url=get_url(station_id)
-    try:
-        data=get_json(station_id)
-        aqi_data=parse_json(data.decode('utf-8'))
-        write_to_mysql(station_id,aqi_data)
-    finally:
-        return 0
+    rectime=get_recoder_time(station_id)
+    for t in rectime:
+        url=get_url(station_id,t)
+        try:
+            data=get_json(station_id)
+            aqi_data=parse_json(data.decode('utf-8'))
+            write_to_mysql(station_id,aqi_data)
+        except:
+            return 0
     
 # query station name
 def query_station_name(station_id):
@@ -120,6 +121,25 @@ def create_datafile(station_id):
         fobj.write(f_line)
     fobj.close()
     
+# get the time need to recoder aqi
+def get_recoder_time(station_id):
+    rec_times=list()
+    lasttime=get_last_time(station_id)
+    if lasttime is None:
+        rec_times.append(time.time())
+        return rec_times
+    # subscration the mins and sec
+    fun=lambda x : int(time.mktime(x)-x.tm_sec-x.tm_min*60)
+    lasttime=time.localtime(lasttime)
+    lasttime=fun(lasttime)
+    curtime=time.localtime()
+    curtime=fun(curtime)
+    # gen list
+    max=5;
+    endtime=lasttime+max*3600
+    endtime=int(min(endtime,curtime))
+    return list(range(lasttime+3600,endtime+1,3600))
+
 def main():
     ids=read_all_station_id()
     [ add_recoder_station(x) for x in ids ]
