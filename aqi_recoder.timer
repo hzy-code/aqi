@@ -1,0 +1,10 @@
+[Unit]
+Description= aqi recoder timer
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=15min
+Unit=aqi_recoder.service
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+[Unit]
+Description= aqi recoder service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/aqi_recoder.py
+User=hzy
+Group=hzy
+PermissionsStartOnly=true
+
