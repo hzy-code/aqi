@@ -39,8 +39,7 @@ def get_url(station_id,t=time.time()):
     return url;
 
 # get the json for station
-def get_json(station_id):
-    url=get_url(station_id)
+def get_json(url):
     res=urllib.request.urlopen(url)
     return res.readall()
 
@@ -86,7 +85,7 @@ def add_recoder_station(station_id):
     for t in rectime:
         url=get_url(station_id,t)
         try:
-            data=get_json(station_id)
+            data=get_json(url)
             aqi_data=parse_json(data.decode('utf-8'))
             write_to_mysql(station_id,aqi_data)
         except:
