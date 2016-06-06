@@ -89,7 +89,7 @@ def add_recoder_station(station_id):
             aqi_data=parse_json(data.decode('utf-8'))
             write_to_mysql(station_id,aqi_data)
         except:
-            return 0
+            continue
     
 # query station name
 def query_station_name(station_id):
@@ -101,7 +101,7 @@ def query_station_name(station_id):
 # create datafile for gnuplot
 def create_datafile(station_id):
     #gen sql
-    innertime=48*3600
+    innertime=24*3600
     mintime=time.time()-innertime
     mintime=time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(mintime))
     sql='SELECT rec_time,station_name,aqi,pm25aqi FROM st_aqi WHERE rec_time >= \'%s\' AND station_id=%d' %(mintime,station_id)
