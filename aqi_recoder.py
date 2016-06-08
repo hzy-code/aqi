@@ -6,7 +6,7 @@ import urllib.request
 import time
 import sys
 import os
-
+import subprocess
 import json
 
 #db basic var
@@ -182,7 +182,15 @@ def get_recoder_time(station_id):
 def clean_aqi_download_fail(id):
     pass
 
+# 初始化函数 
+def init():
+    cmd='vmhgfs-fuse .host:/share /home/hzy/share'.split(' ')
+    path='/home/hzy/share/aqi'
+    if not os.path.exists(path):
+        subprocess.call(cmd)
+
 def main():
+    init()
     ids=read_all_station_id()
     [ add_recoder_station(x) for x in ids ]
     [ create_datafile(x) for x in ids ]
