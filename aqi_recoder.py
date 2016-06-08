@@ -78,6 +78,25 @@ def write_to_mysql(station_id,aqi_data):
     db.conn.commit()
     return 1
 
+# write fail (station,id) info to db(aqi_download_fail)
+def log_fail(station_id,t):
+    if station_id==0:
+        return
+    cur_t=time.time()
+    local_t=time.localtime(cur_t)
+    if cur_t - t < local_t.tm_min*60+local_t.tm_sec:
+        return;
+    # write basic info (station_id ,time)
+    strtime=time.strftime('%y-%m-%d %H:00:00',time.localtime(t))
+    try:
+        sql="INSERT INTO aqi_download_fail(station_id,rec_time) VALUES(%d,'%s')" %(station_id,strtime)
+        res=db.cur.execute(sql)
+        db.conn.commit()
+    except:
+        # add fail count
+        sql="UPDATE aqi_download_fail SET fail_count=fail_count+1 WHERE station_id=%d AND rec_time='%s'" %(station_id,strtime)
+        db.cur.execute(sql)
+        db.conn.commit()
 
 # add a recoder for a station
 def add_recoder_station(station_id):
@@ -89,6 +108,7 @@ def add_recoder_station(station_id):
             aqi_data=parse_json(data.decode('utf-8'))
             write_to_mysql(station_id,aqi_data)
         except:
+            log_fail(station_id,t)        
             continue
     
 # query station name
@@ -120,6 +140,21 @@ def create_datafile(station_id):
         fobj.write(f_line)
     fobj.close()
     
+# get skip fail time
+def get_fail_time(station_id):
+    sql="SELECT max(rec_time) FROM aqi_download_fail WHERE station_id=%d AND fail_count>=%d" %(station_id,3)
+    if 0==db.cur.execute(sql):
+        return None
+    res=db.cur.fetchall()
+    if len(res)==0:
+        return None
+    rec_time=res[0][0]
+    if rec_time is None:
+        return None
+    return rec_time.timestamp()
+
+
+
 # get the time need to recoder aqi
 def get_recoder_time(station_id):
     rec_times=list()
@@ -127,6 +162,11 @@ def get_recoder_time(station_id):
     if lasttime is None:
         rec_times.append(time.time())
         return rec_times
+    fail_time=get_fail_time(station_id)
+    if fail_time is not None:
+        if lasttime < fail_time:
+            lasttime = fail_time
+
     # subscration the mins and sec
     fun=lambda x : int(time.mktime(x)-x.tm_sec-x.tm_min*60)
     lasttime=time.localtime(lasttime)
@@ -138,6 +178,9 @@ def get_recoder_time(station_id):
     endtime=lasttime+max*3600
     endtime=int(min(endtime,curtime))
     return list(range(lasttime+3600,endtime+1,3600))
+
+def clean_aqi_download_fail(id):
+    pass
 
 def main():
     ids=read_all_station_id()
