@@ -12,6 +12,9 @@ import json
 #db basic var
 import db
 
+import conf
+import plot
+
 # parser command line argument
 def parse_cmd_argu():
     if len(sys.argv)==1:
@@ -129,7 +132,7 @@ def create_datafile(station_id):
     db.cur.execute(sql)
     res=db.cur.fetchall()
     # write file
-    path=os.path.join('/home/hzy/share/aqi',query_station_name(station_id)+'.txt')
+    path=os.path.join(conf.DATA_DIR,query_station_name(station_id)+'.txt')
     fobj=open(path,'w')
     for line in res:
         date=time.strftime('%Y-%m-%d %H:%M:%S',line[0].timetuple())
@@ -152,7 +155,6 @@ def get_fail_time(station_id):
     if rec_time is None:
         return None
     return rec_time.timestamp()
-
 
 
 # get the time need to recoder aqi
@@ -184,16 +186,38 @@ def clean_aqi_download_fail(id):
 
 # 初始化函数 
 def init():
-    cmd='vmhgfs-fuse .host:/share /home/hzy/share'.split(' ')
-    path='/home/hzy/share/aqi'
-    if not os.path.exists(path):
-        subprocess.call(cmd)
+    cmd=('vmhgfs-fuse .host:/share '+conf.BASE_DIR).split(' ')
+    if not os.path.exists(conf.DATA_DIR):
+        if subprocess.call(cmd,shell=True) != 0:
+            print('mount .host:/share error')
 
+# plot the graph for id
+def plot_id(id):
+    if id==0:
+        return
+    title='AQI'
+    sql='SELECT name FROM station WHERE id=%s' %(id)
+    if db.cur.execute(sql)==0:
+        return
+    res=db.cur.fetchall()
+    try:
+        station=res[0][0]
+        direct=plot.gen_plot_direct(title,station,station)
+        plot.plot(direct)
+    except:
+        return
+
+def test():
+    init()
+    ids=read_all_station_id()
+    [ plot_id(x) for x in ids] 
+    
 def main():
     init()
     ids=read_all_station_id()
     [ add_recoder_station(x) for x in ids ]
     [ create_datafile(x) for x in ids ]
+    [ plot_id(x) for x in ids] 
     
 if __name__=="__main__":
     main()
