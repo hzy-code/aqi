@@ -22,7 +22,7 @@ plot '%s.txt' u 1:4 title 'aqi' with lines, '%s.txt' u 1:5 title 'pm25' with lin
 
 
 def plot(direct):
-    popen=subprocess.Popen(['gnuplot'],stdin=subprocess.PIPE,bufsize=1,
+    popen=subprocess.Popen(['/usr/bin/gnuplot'],stdin=subprocess.PIPE,bufsize=1,
             universal_newlines=True)
     popen.stdin.write(direct)
     popen.stdin.close()

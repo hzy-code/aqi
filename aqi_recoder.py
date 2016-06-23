@@ -186,9 +186,9 @@ def clean_aqi_download_fail(id):
 
 # 初始化函数 
 def init():
-    cmd=('vmhgfs-fuse .host:/share '+conf.BASE_DIR).split(' ')
+    cmd=('/usr/bin/vmhgfs-fuse .host:/share '+conf.BASE_DIR).split(' ')
     if not os.path.exists(conf.DATA_DIR):
-        if subprocess.call(cmd,shell=True) != 0:
+        if subprocess.call(cmd) != 0:
             print('mount .host:/share error')
 
 # plot the graph for id
@@ -209,8 +209,6 @@ def plot_id(id):
 
 def test():
     init()
-    ids=read_all_station_id()
-    [ plot_id(x) for x in ids] 
     
 def main():
     init()
